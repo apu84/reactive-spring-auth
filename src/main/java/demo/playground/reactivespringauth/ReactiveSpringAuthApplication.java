@@ -11,8 +11,6 @@ public class ReactiveSpringAuthApplication {
 
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(ReactiveSpringAuthApplication.class, args);
-        DataInit dataInit = context.getBean(DataInit.class);
-        dataInit.init();
     }
 
 }
