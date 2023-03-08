@@ -1,6 +1,5 @@
-package demo.playground.reactivespringauth.domain;
+package demo.playground.reactivespringauth.user;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class UserBuilder {

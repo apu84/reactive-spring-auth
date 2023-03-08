@@ -1,7 +1,7 @@
 package demo.playground.reactivespringauth.api;
 
-import demo.playground.reactivespringauth.domain.User;
-import demo.playground.reactivespringauth.repository.UserRepository;
+import demo.playground.reactivespringauth.user.User;
+import demo.playground.reactivespringauth.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +28,7 @@ public class NewUser {
     }
 
     @PostMapping
-    public Mono<ResponseEntity> create(@RequestBody Mono<AuthenticationRequest> userEntity) {
+    public Mono<ResponseEntity<User>> create(@RequestBody Mono<AuthenticationRequest> userEntity) {
        return userEntity
                .map(user -> User.builder()
                        .username(user.getUsername())

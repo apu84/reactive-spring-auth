@@ -1,6 +1,6 @@
 package demo.playground.reactivespringauth.config;
 
-import demo.playground.reactivespringauth.repository.UserRepository;
+import demo.playground.reactivespringauth.user.UserRepository;
 import demo.playground.reactivespringauth.security.jwt.JwtTokenAuthenticationFilter;
 import demo.playground.reactivespringauth.security.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.DELETE, PATH_POSTS).hasRole("ADMIN")
                         .pathMatchers(PATH_POSTS).authenticated()
                         .pathMatchers("/me").authenticated()
+                        .pathMatchers(HttpMethod.POST, "/logout").authenticated()
                         .pathMatchers("/users/{user}/**").access(this::currentUserMatchesPath)
                         .anyExchange().permitAll()
                 )

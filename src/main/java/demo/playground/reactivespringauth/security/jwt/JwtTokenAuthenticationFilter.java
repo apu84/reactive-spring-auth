@@ -1,4 +1,5 @@
 package demo.playground.reactivespringauth.security.jwt;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -10,6 +11,8 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.ExecutionException;
 
 @Component
 public class JwtTokenAuthenticationFilter implements WebFilter {
@@ -26,10 +29,16 @@ public class JwtTokenAuthenticationFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String token = resolveToken(exchange.getRequest());
-        if (StringUtils.hasText(token) && this.tokenProvider.validateToken(token)) {
-            Authentication authentication = this.tokenProvider.getAuthentication(token);
-            return chain.filter(exchange)
-                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+        if (StringUtils.hasText(token)) {
+               return this.tokenProvider.validateToken(token)
+                        .flatMap(isValid -> {
+                            if (!isValid) {
+                                return chain.filter(exchange);
+                            }
+                            Authentication authentication = this.tokenProvider.getAuthentication(token);
+                            return chain.filter(exchange)
+                                    .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+                        });
         }
         return chain.filter(exchange);
     }

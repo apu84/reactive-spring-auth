@@ -1,4 +1,4 @@
-package demo.playground.reactivespringauth.domain;
+package demo.playground.reactivespringauth.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;

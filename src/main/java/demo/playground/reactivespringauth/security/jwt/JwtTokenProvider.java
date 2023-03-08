@@ -1,5 +1,6 @@
 package demo.playground.reactivespringauth.security.jwt;
 
+import demo.playground.reactivespringauth.user.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,12 +10,14 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 
 import static java.util.stream.Collectors.joining;
 
@@ -25,17 +28,23 @@ public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    private SecretKey secretKey;
+    private final SecretKey secretKey;
+    private final TokenRepository tokenRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public JwtTokenProvider(final JwtProperties jwtProperties) {
+    public JwtTokenProvider(final JwtProperties jwtProperties,
+                            final TokenRepository tokenRepository,
+                            final UserRepository userRepository) {
         this.jwtProperties = jwtProperties;
+        this.tokenRepository = tokenRepository;
+        this.userRepository = userRepository;
         var secret = Base64.getEncoder()
                 .encodeToString(this.jwtProperties.getSecretKey().getBytes());
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createToken(Authentication authentication) {
+    public Mono<String> createToken(Authentication authentication) {
 
         String username = authentication.getName();
         Collection<? extends GrantedAuthority> authorities = authentication
@@ -48,10 +57,12 @@ public class JwtTokenProvider {
 
         Date now = new Date();
         Date validity = new Date(now.getTime() + this.jwtProperties.getValidityInMs());
-
-        return Jwts.builder().setClaims(claims).setIssuedAt(now).setExpiration(validity)
+        String token = Jwts.builder().setClaims(claims).setIssuedAt(now).setExpiration(validity)
                 .signWith(this.secretKey, SignatureAlgorithm.HS256).compact();
-
+        return userRepository.findByUsername(username)
+                .flatMap((user -> tokenRepository
+                        .save(new Token(token, user.getId()))
+                        .thenReturn(token)));
     }
 
     public Authentication getAuthentication(String token) {
@@ -70,17 +81,33 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
-    public boolean validateToken(String token) {
-        try {
-            Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(this.secretKey)
-                    .build().parseClaimsJws(token);
-            // parseClaimsJws will check expiration date. No need do here.
-//            log.info("expiration date: {}", claims.getBody().getExpiration());
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-//            log.info("Invalid JWT token: {}", e.getMessage());
-//            log.trace("Invalid JWT token trace.", e);
-        }
-        return false;
+    public Mono<Boolean> validateToken(String token) {
+        return isTokenPresent(token)
+                .flatMap(isPresent -> {
+                    if (!isPresent) {
+                        return Mono.just(false);
+                    }
+                    try {
+                        Jwts.parserBuilder().setSigningKey(this.secretKey)
+                                .build().parseClaimsJws(token);
+                        return Mono.just(true);
+                    } catch (JwtException | IllegalArgumentException e) {
+                        return deactivateToken(token).thenReturn(false);
+                    }
+                });
+    }
+
+    public Mono<Token> deactivateToken(final String token) {
+        return tokenRepository.findByContent(token)
+                .flatMap(t -> {
+                    t.deActivate();
+                    return tokenRepository.save(t);
+                });
+    }
+
+    private Mono<Boolean> isTokenPresent(final String token) {
+        return tokenRepository.findByContent(token)
+                .map(Token::isActive)
+                .switchIfEmpty(Mono.just(false));
     }
 }
