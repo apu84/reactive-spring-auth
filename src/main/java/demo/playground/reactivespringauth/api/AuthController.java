@@ -74,7 +74,7 @@ public class AuthController {
     @GetMapping("/me")
     public Mono<Map<String, Object>> currentUser(@AuthenticationPrincipal Mono<UserDetails> principal) {
         return principal.map(user -> Map.of(
-                "name", user.getUsername(),
+                "userName", user.getUsername(),
                 "roles", AuthorityUtils.authorityListToSet(user.getAuthorities())));
     }
 
