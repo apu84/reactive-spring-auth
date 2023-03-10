@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
 
 import static java.util.stream.Collectors.joining;
 
@@ -81,20 +80,23 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
-    public Mono<Boolean> validateToken(String token) {
-        return isTokenPresent(token)
-                .flatMap(isPresent -> {
-                    if (!isPresent) {
-                        return Mono.just(false);
-                    }
-                    try {
-                        Jwts.parserBuilder().setSigningKey(this.secretKey)
-                                .build().parseClaimsJws(token);
-                        return Mono.just(true);
-                    } catch (JwtException | IllegalArgumentException e) {
-                        return deactivateToken(token).thenReturn(false);
-                    }
-                });
+    public Mono<Boolean> isValidToken(final String token) {
+        return tokenRepository.findByContent(token)
+                        .map(Token::isActive)
+                        .switchIfEmpty(Mono.just(false))
+                        .map(active -> active && canParseToken(token))
+                        .flatMap(parsed -> parsed ? Mono.just(true): deactivateToken(token).thenReturn(false))
+                        .defaultIfEmpty(false);
+    }
+
+    private boolean canParseToken(final String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(this.secretKey)
+                    .build().parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException ignored) {
+        }
+        return false;
     }
 
     public Mono<Token> deactivateToken(final String token) {

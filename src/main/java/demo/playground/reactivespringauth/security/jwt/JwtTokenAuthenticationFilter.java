@@ -1,6 +1,5 @@
 package demo.playground.reactivespringauth.security.jwt;
 
-import com.mongodb.internal.connection.Server;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,13 +9,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
-
-import java.util.concurrent.ExecutionException;
 
 @Component
 public class JwtTokenAuthenticationFilter implements WebFilter {
@@ -34,7 +30,7 @@ public class JwtTokenAuthenticationFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String token = resolveToken(exchange.getRequest());
         if (StringUtils.hasText(token)) {
-               return this.tokenProvider.validateToken(token)
+               return this.tokenProvider.isValidToken(token)
                         .flatMap(isValid -> {
                             if (!isValid) {
                                 return sendUnauthenticated(exchange.getResponse());
@@ -44,7 +40,7 @@ public class JwtTokenAuthenticationFilter implements WebFilter {
                                     .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
                         });
         }
-        return chain.filter(exchange);
+        return sendUnauthenticated(exchange.getResponse());
     }
 
     private String resolveToken(ServerHttpRequest request) {
