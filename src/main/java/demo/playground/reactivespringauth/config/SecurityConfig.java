@@ -1,11 +1,9 @@
 package demo.playground.reactivespringauth.config;
 
+import demo.playground.reactivespringauth.security.jwt.*;
 import demo.playground.reactivespringauth.user.UserRepository;
-import demo.playground.reactivespringauth.security.jwt.JwtTokenAuthenticationFilter;
-import demo.playground.reactivespringauth.security.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -17,9 +15,12 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
-import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 import reactor.core.publisher.Mono;
+
+import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -27,40 +28,52 @@ public class SecurityConfig {
 
     @Bean
     SecurityWebFilterChain springWebFilterChain(ServerHttpSecurity http,
-                                                JwtTokenProvider tokenProvider,
-                                                ReactiveAuthenticationManager reactiveAuthenticationManager) {
-        final String PATH_POSTS = "/posts/**";
+                                                JwtTokenProvider tokenProvider) {
+        //Disable things you don't need in spring security.
+        http.httpBasic().disable();
+        http.formLogin().disable();
+        http.csrf().disable();
+        http.logout().disable();
 
-        return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                .authenticationManager(reactiveAuthenticationManager)
-                .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .authorizeExchange(it -> it
-                        .pathMatchers(HttpMethod.GET, PATH_POSTS).permitAll()
-                        .pathMatchers(HttpMethod.DELETE, PATH_POSTS).hasRole("ADMIN")
-                        .pathMatchers(PATH_POSTS).authenticated()
-                        .pathMatchers("/me").authenticated()
-                        .pathMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/logout").authenticated()
-                        .pathMatchers("/users/{user}/**").access(this::currentUserMatchesPath)
-                        .anyExchange().permitAll()
-                )
-                .addFilterAt(new JwtTokenAuthenticationFilter(tokenProvider), SecurityWebFiltersOrder.HTTP_BASIC)
-                .build();
+        //Those that do not require jwt token authentication should be pass.
+        http.authorizeExchange()
+                .pathMatchers("/health-check/**", "/auth/login")
+                .permitAll();
+//        http.authorizeExchange().pathMatchers(HttpMethod.OPTIONS).permitAll();
+//        http.authorizeExchange().pathMatchers(HttpMethod.GET).permitAll();
+//        http.authorizeExchange().pathMatchers(HttpMethod.POST).permitAll();
+
+        //Apply a JWT custom filter to all / ** apis.
+        http.authorizeExchange()
+                .pathMatchers("/user/{user}").access(this::currentUserMatchesPath)
+                .pathMatchers("/**").authenticated()
+                .and()
+                .addFilterAt(bearerAuthenticationFilter(tokenProvider), SecurityWebFiltersOrder.AUTHENTICATION)
+                .httpBasic().disable()
+                .formLogin().disable()
+                .csrf().disable()
+                .cors();
+
+        return http.build();
+    }
+
+    private AuthenticationWebFilter bearerAuthenticationFilter(final JwtTokenProvider jwtTokenProvider) {
+        AuthenticationWebFilter bearerAuthenticationFilter = new AuthenticationWebFilter((ReactiveAuthenticationManager) Mono::just);
+        ServerAuthenticationConverter bearerConverter = new JwtToAuthConverter(jwtTokenProvider);
+        bearerAuthenticationFilter.setServerAuthenticationConverter(bearerConverter);
+        bearerAuthenticationFilter.setRequiresAuthenticationMatcher(pathMatchers("/auth/me", "/user/**"));
+        return bearerAuthenticationFilter;
     }
 
     private Mono<AuthorizationDecision> currentUserMatchesPath(Mono<Authentication> authentication,
                                                                AuthorizationContext context) {
-
         return authentication
                 .map(a -> context.getVariables().get("user").equals(a.getName()))
                 .map(AuthorizationDecision::new);
-
     }
 
     @Bean
     public ReactiveUserDetailsService userDetailsService(UserRepository users) {
-
         return username -> users.findByUsername(username)
                 .map(u -> User
                         .withUsername(u.getUsername()).password(u.getPassword())

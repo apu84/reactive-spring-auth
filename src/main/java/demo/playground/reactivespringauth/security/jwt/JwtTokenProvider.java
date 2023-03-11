@@ -39,7 +39,7 @@ public class JwtTokenProvider {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         var secret = Base64.getEncoder()
-                .encodeToString(this.jwtProperties.getSecretKey().getBytes());
+                .encodeToString(this.jwtProperties.getSecretkey().getBytes());
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -55,7 +55,7 @@ public class JwtTokenProvider {
         }
 
         Date now = new Date();
-        Date validity = new Date(now.getTime() + this.jwtProperties.getValidityInMs());
+        Date validity = new Date(now.getTime() + this.jwtProperties.getValidityinms());
         String token = Jwts.builder().setClaims(claims).setIssuedAt(now).setExpiration(validity)
                 .signWith(this.secretKey, SignatureAlgorithm.HS256).compact();
         return userRepository.findByUsername(username)
@@ -80,23 +80,16 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 
-    public Mono<Boolean> isValidToken(final String token) {
+    Mono<Boolean> isSavedToken(final String token) {
         return tokenRepository.findByContent(token)
-                        .map(Token::isActive)
-                        .switchIfEmpty(Mono.just(false))
-                        .map(active -> active && canParseToken(token))
-                        .flatMap(parsed -> parsed ? Mono.just(true): deactivateToken(token).thenReturn(false))
-                        .defaultIfEmpty(false);
+                        .filter(Token::isActive)
+                        .switchIfEmpty(Mono.error(new UnAuthorizedException("Invalid Bearer Token")))
+                        .map(saved -> true);
     }
 
-    private boolean canParseToken(final String token) {
-        try {
-            Jwts.parserBuilder().setSigningKey(this.secretKey)
-                    .build().parseClaimsJws(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException ignored) {
-        }
-        return false;
+    Claims parseToken(final String token) {
+         return Jwts.parserBuilder().setSigningKey(this.secretKey)
+                    .build().parseClaimsJws(token).getBody();
     }
 
     public Mono<Token> deactivateToken(final String token) {
@@ -105,11 +98,5 @@ public class JwtTokenProvider {
                     t.deActivate();
                     return tokenRepository.save(t);
                 });
-    }
-
-    private Mono<Boolean> isTokenPresent(final String token) {
-        return tokenRepository.findByContent(token)
-                .map(Token::isActive)
-                .switchIfEmpty(Mono.just(false));
     }
 }

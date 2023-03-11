@@ -5,16 +5,24 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
 
-    private String secretKey = "rzxlszyykpbgqcflzxsqcysyhljt";
+    private String secretkey;
 
     // validity in milliseconds
-    private long validityInMs = 3600000; // 1h
+    private long validityinms; // 1h
 
-    public String getSecretKey() {
-        return secretKey;
+    public String getSecretkey() {
+        return secretkey;
     }
 
-    public long getValidityInMs() {
-        return validityInMs;
+    public long getValidityinms() {
+        return validityinms;
+    }
+
+    public void setSecretkey(String secretkey) {
+        this.secretkey = secretkey;
+    }
+
+    public void setValidityinms(long validityinms) {
+        this.validityinms = validityinms;
     }
 }
