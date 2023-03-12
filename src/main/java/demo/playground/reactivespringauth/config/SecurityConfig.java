@@ -61,7 +61,7 @@ public class SecurityConfig {
         AuthenticationWebFilter bearerAuthenticationFilter = new AuthenticationWebFilter((ReactiveAuthenticationManager) Mono::just);
         ServerAuthenticationConverter bearerConverter = new JwtToAuthConverter(jwtTokenProvider);
         bearerAuthenticationFilter.setServerAuthenticationConverter(bearerConverter);
-        bearerAuthenticationFilter.setRequiresAuthenticationMatcher(pathMatchers("/auth/me", "/user/**"));
+        bearerAuthenticationFilter.setRequiresAuthenticationMatcher(pathMatchers("/auth/me", "/user/**", "/auth/logout"));
         return bearerAuthenticationFilter;
     }
 

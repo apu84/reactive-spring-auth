@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 @RestController
 @RequestMapping("/auth")
@@ -30,6 +32,11 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     private final UserRepository userRepository;
+
+    private static final String BEARER = "Bearer ";
+    private static final Predicate<String> matchBearerLength = authValue -> authValue.length() > BEARER.length();
+    private static final Function<String, Mono<String>> isolateBearerValue = authValue -> Mono.justOrEmpty(authValue.substring(BEARER.length()));
+
 
     @Autowired
     public AuthController(final JwtTokenProvider jwtTokenProvider,
@@ -67,7 +74,7 @@ public class AuthController {
                         .password(passwordEncoder.encode(user.getPassword()))
                         .roles(List.of("USER"))
                         .build())
-                .flatMap(user -> userRepository.save(user))
+                .flatMap(userRepository::save)
                 .map(savedUser -> new ResponseEntity<>(savedUser, HttpStatus.CREATED));
     }
 
@@ -79,9 +86,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public Mono<ResponseEntity> logout(@RequestHeader("Authorization") String authorization) {
-        return tokenProvider.deactivateToken(authorization)
-                .thenReturn(new ResponseEntity(HttpStatus.OK));
+    public Mono<Void> logout(@RequestHeader("Authorization") String authorization) {
+        return Mono.just(authorization)
+                .filter(matchBearerLength)
+                .flatMap(isolateBearerValue)
+                .flatMap(token -> tokenProvider
+                        .deactivateToken(token)
+                        .thenEmpty(Mono.empty()));
     }
 
 }

@@ -64,27 +64,11 @@ public class JwtTokenProvider {
                         .thenReturn(token)));
     }
 
-    public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parserBuilder().setSigningKey(this.secretKey).build()
-                .parseClaimsJws(token).getBody();
-
-        Object authoritiesClaim = claims.get(AUTHORITIES_KEY);
-
-        Collection<? extends GrantedAuthority> authorities = authoritiesClaim == null
-                ? AuthorityUtils.NO_AUTHORITIES
-                : AuthorityUtils
-                .commaSeparatedStringToAuthorityList(authoritiesClaim.toString());
-
-        User principal = new User(claims.getSubject(), "", authorities);
-
-        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
-    }
-
     Mono<Boolean> isSavedToken(final String token) {
         return tokenRepository.findByContent(token)
                         .filter(Token::isActive)
                         .switchIfEmpty(Mono.error(new UnAuthorizedException("Invalid Bearer Token")))
-                        .map(saved -> true);
+                        .map(Token::isActive);
     }
 
     Claims parseToken(final String token) {
