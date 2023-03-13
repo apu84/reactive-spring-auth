@@ -75,8 +75,16 @@ public class AuthController {
                         .password(passwordEncoder.encode(user.getPassword()))
                         .roles(List.of("USER"))
                         .build())
+                .flatMap(user ->
+                        userRepository
+                                .findByEmail(user.getEmail())
+                                .flatMap(existing -> Mono.error(new IllegalArgumentException("User already exists")))
+                                .switchIfEmpty(Mono.just(user))
+                )
+                .cast(AuthUser.class)
                 .flatMap(userRepository::save)
-                .map(savedUser -> new ResponseEntity<>(savedUser, HttpStatus.CREATED));
+                .map(savedUser -> new ResponseEntity<>(savedUser, HttpStatus.CREATED))
+                .onErrorResume((error) -> Mono.just(new ResponseEntity<>(HttpStatus.BAD_REQUEST)));
     }
 
     @GetMapping("/me")
