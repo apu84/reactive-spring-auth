@@ -1,6 +1,7 @@
 package demo.playground.reactivespringauth.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -35,6 +36,7 @@ public class AuthUser {
         return username;
     }
 
+    @JsonIgnore
     public String getPassword() {
         return password;
     }
@@ -61,6 +63,11 @@ public class AuthUser {
 
     public boolean isAccountLocked() {
         return accountLocked;
+    }
+
+    @JsonProperty
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public static UserBuilder builder() {
