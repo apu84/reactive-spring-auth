@@ -8,18 +8,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Document
-public class User {
+public class AuthUser {
 
     @Id
     String id;
 
     String username;
 
+    @JsonIgnore
     String password;
 
     String email;
 
-    boolean active = true;
+    boolean accountExpired ;
+    boolean credentialExpired;
+    boolean disabled;
+    boolean accountLocked;
 
     List<String> roles = new ArrayList<>();
 
@@ -39,12 +43,24 @@ public class User {
         return email;
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
     public List<String> getRoles() {
         return roles;
+    }
+
+    public boolean isAccountExpired() {
+        return accountExpired;
+    }
+
+    public boolean isCredentialExpired() {
+        return credentialExpired;
+    }
+
+    public boolean isDisabled() {
+        return disabled;
+    }
+
+    public boolean isAccountLocked() {
+        return accountLocked;
     }
 
     public static UserBuilder builder() {

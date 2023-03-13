@@ -2,6 +2,7 @@ package demo.playground.reactivespringauth.config;
 
 import demo.playground.reactivespringauth.security.jwt.*;
 import demo.playground.reactivespringauth.user.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
@@ -11,6 +12,7 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,11 +22,20 @@ import org.springframework.security.web.server.authentication.ServerAuthenticati
 import org.springframework.security.web.server.authorization.AuthorizationContext;
 import reactor.core.publisher.Mono;
 
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
+    private UserRepository userRepository;
+
+    @Autowired
+    public SecurityConfig(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Bean
     SecurityWebFilterChain springWebFilterChain(ServerHttpSecurity http,
@@ -37,13 +48,9 @@ public class SecurityConfig {
 
         //Those that do not require jwt token authentication should be pass.
         http.authorizeExchange()
-                .pathMatchers("/health-check/**", "/auth/login")
+                .pathMatchers("/health-check/**", "/auth/login", "/auth/new-user")
                 .permitAll();
-//        http.authorizeExchange().pathMatchers(HttpMethod.OPTIONS).permitAll();
-//        http.authorizeExchange().pathMatchers(HttpMethod.GET).permitAll();
-//        http.authorizeExchange().pathMatchers(HttpMethod.POST).permitAll();
 
-        //Apply a JWT custom filter to all / ** apis.
         http.authorizeExchange()
                 .pathMatchers("/user/{user}").access(this::currentUserMatchesPath)
                 .pathMatchers("/**").authenticated()
@@ -59,7 +66,7 @@ public class SecurityConfig {
 
     private AuthenticationWebFilter bearerAuthenticationFilter(final JwtTokenProvider jwtTokenProvider) {
         AuthenticationWebFilter bearerAuthenticationFilter = new AuthenticationWebFilter((ReactiveAuthenticationManager) Mono::just);
-        ServerAuthenticationConverter bearerConverter = new JwtToAuthConverter(jwtTokenProvider);
+        ServerAuthenticationConverter bearerConverter = new JwtToAuthConverter(jwtTokenProvider, userDetailsService());
         bearerAuthenticationFilter.setServerAuthenticationConverter(bearerConverter);
         bearerAuthenticationFilter.setRequiresAuthenticationMatcher(pathMatchers("/auth/me", "/user/**", "/auth/logout"));
         return bearerAuthenticationFilter;
@@ -73,15 +80,16 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ReactiveUserDetailsService userDetailsService(UserRepository users) {
-        return username -> users.findByUsername(username)
-                .map(u -> User
-                        .withUsername(u.getUsername()).password(u.getPassword())
-                        .authorities(u.getRoles().toArray(new String[0]))
-                        .accountExpired(!u.isActive())
-                        .credentialsExpired(!u.isActive())
-                        .disabled(!u.isActive())
-                        .accountLocked(!u.isActive())
+    public ReactiveUserDetailsService userDetailsService() {
+        return username -> userRepository.findByEmail(username)
+                .map(user -> User
+                        .withUsername(user.getEmail())
+                        .password(user.getPassword())
+                        .authorities(user.getRoles().stream().map(SimpleGrantedAuthority::new).collect(toList()))
+                        .accountExpired(user.isAccountExpired())
+                        .credentialsExpired(user.isCredentialExpired())
+                        .disabled(user.isDisabled())
+                        .accountLocked(user.isAccountLocked())
                         .build()
                 );
     }

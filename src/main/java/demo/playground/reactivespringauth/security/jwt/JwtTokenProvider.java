@@ -44,11 +44,10 @@ public class JwtTokenProvider {
     }
 
     public Mono<String> createToken(Authentication authentication) {
-
-        String username = authentication.getName();
+        String email = authentication.getName();
         Collection<? extends GrantedAuthority> authorities = authentication
                 .getAuthorities();
-        Claims claims = Jwts.claims().setSubject(username);
+        Claims claims = Jwts.claims().setSubject(email);
         if (!authorities.isEmpty()) {
             claims.put(AUTHORITIES_KEY, authorities.stream()
                     .map(GrantedAuthority::getAuthority).collect(joining(",")));
@@ -56,9 +55,13 @@ public class JwtTokenProvider {
 
         Date now = new Date();
         Date validity = new Date(now.getTime() + this.jwtProperties.getValidityinms());
-        String token = Jwts.builder().setClaims(claims).setIssuedAt(now).setExpiration(validity)
-                .signWith(this.secretKey, SignatureAlgorithm.HS256).compact();
-        return userRepository.findByUsername(username)
+        String token = Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(this.secretKey, SignatureAlgorithm.HS256)
+                .compact();
+        return userRepository.findByEmail(email)
                 .flatMap((user -> tokenRepository
                         .save(new Token(token, user.getId()))
                         .thenReturn(token)));

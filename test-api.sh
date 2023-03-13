@@ -66,13 +66,13 @@ logout() {
     response=$(curl -s -w "\n%{http_code}"  http://localhost:8899/auth/login -H "Content-Type: application/json" --data-raw '{"username":"'$1'","password":"admin"}')
   #  echo "$response"
     http_code=$(tail -n1 <<< "$response")  # get the last line
-    content=$(sed '$ d' <<< "$response")   # get all but the last line which contains the status code
+    content=$(sed '$ d' <<< "$response" | jq)   # get all but the last line which contains the status code
     echo "Status: $http_code"
     if [[ "$content" != "" ]]; then
       echo "Content: $content"
     fi
     echo "</Login>"
-
+    echo ""
     if [[ $http_code == 200 ]]; then
       access_token=$(echo $content | jq -r '.access_token')
       logout_response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8899/auth/logout -H "Authorization: Bearer "$access_token)
@@ -81,15 +81,17 @@ logout() {
       content=$(sed '$ d' <<< "$logout_response")
       echo "<Logout>"
       echo "Status: $http_code"
-      echo "Content: $content"
-      echo "</logout>"
-
+      if [[ "$content" != "" ]]; then
+        echo "Content: $content"
+      fi
+      echo "</Logout>"
+      echo ""
       echo "<me>"
       if [[ $http_code == 200 ]]; then
         me_response=$(curl -s -w "\n%{http_code}" http://localhost:8899/auth/me -H "Authorization: Bearer "$access_token)
 
         http_code=$(tail -n1 <<< "$me_response")
-        content=$(sed '$ d' <<< "$me_response")
+        content=$(sed '$ d' <<< "$me_response" | jq)
 
         echo "Status: $http_code"
         echo "Content: $content"

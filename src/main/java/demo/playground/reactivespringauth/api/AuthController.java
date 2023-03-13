@@ -1,7 +1,7 @@
 package demo.playground.reactivespringauth.api;
 
 
-import demo.playground.reactivespringauth.user.User;
+import demo.playground.reactivespringauth.user.AuthUser;
 import demo.playground.reactivespringauth.user.UserRepository;
 import demo.playground.reactivespringauth.security.jwt.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,11 +51,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public Mono<ResponseEntity> login(
-            @RequestBody Mono<User> authRequest) {
+            @RequestBody Mono<AuthenticationRequest> authRequest) {
         return authRequest
                 .flatMap(login -> this.authenticationManager
-                        .authenticate(new UsernamePasswordAuthenticationToken(
-                                login.getUsername(), login.getPassword()))
+                        .authenticate(
+                            new UsernamePasswordAuthenticationToken(login.getUsername(), login.getPassword()))
                         .flatMap(this.tokenProvider::createToken)
                 )
                 .map(jwt -> {
@@ -67,9 +67,10 @@ public class AuthController {
     }
 
     @PostMapping("new-user")
-    public Mono<ResponseEntity<User>> create(@RequestBody Mono<User> userEntity) {
+    public Mono<ResponseEntity<AuthUser>> create(@RequestBody Mono<AuthUser> userEntity) {
         return userEntity
-                .map(user -> User.builder()
+                .map(user -> AuthUser.builder()
+                        .email(user.getEmail())
                         .username(user.getUsername())
                         .password(passwordEncoder.encode(user.getPassword()))
                         .roles(List.of("USER"))
@@ -79,10 +80,8 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public Mono<Map<String, Object>> currentUser(@AuthenticationPrincipal Mono<UserDetails> principal) {
-        return principal.map(user -> Map.of(
-                "userName", user.getUsername(),
-                "roles", AuthorityUtils.authorityListToSet(user.getAuthorities())));
+    public Mono<AuthUser> currentUser(@AuthenticationPrincipal Mono<UserDetails> principal) {
+        return principal.flatMap(user -> userRepository.findByEmail(user.getUsername()));
     }
 
     @PostMapping("/logout")

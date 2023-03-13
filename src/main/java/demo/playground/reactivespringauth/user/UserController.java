@@ -17,7 +17,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public Mono<User> getUser(@PathVariable String userId) {
+    public Mono<AuthUser> getUser(@PathVariable String userId) {
         return userRepository.findById(userId);
     }
 }

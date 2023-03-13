@@ -1,12 +1,16 @@
 package demo.playground.reactivespringauth.security.jwt;
 
+import demo.playground.reactivespringauth.user.UserRepository;
 import io.jsonwebtoken.Claims;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -18,9 +22,11 @@ import java.util.function.Predicate;
 public class JwtToAuthConverter implements ServerAuthenticationConverter {
     private static final String AUTHORITIES_KEY = "roles";
     private final JwtTokenProvider jwtTokenProvider;
+    private final ReactiveUserDetailsService userDetailsService;
 
-    public JwtToAuthConverter(final JwtTokenProvider jwtTokenProvider) {
+    public JwtToAuthConverter(final JwtTokenProvider jwtTokenProvider, final ReactiveUserDetailsService userDetailsService) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.userDetailsService = userDetailsService;
     }
 
     private static final String BEARER = "Bearer ";
