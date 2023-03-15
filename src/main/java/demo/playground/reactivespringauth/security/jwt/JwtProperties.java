@@ -1,11 +1,14 @@
 package demo.playground.reactivespringauth.security.jwt;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 
 @ConfigurationProperties(prefix = "jwt")
+@Component
 public class JwtProperties {
 
-    private String secretkey;
+    private String secretkey = "asfwegerteryrtbdvbfgytyutrjhdfvfghrytutyrsfdsfdsdfsrethgrdscdfgdb";
 
     // validity in milliseconds
     private long validityinms; // 1h
