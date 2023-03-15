@@ -1,9 +1,9 @@
 package demo.playground.reactivespringauth.api;
 
 
+import demo.playground.reactivespringauth.security.jwt.JwtTokenProvider;
 import demo.playground.reactivespringauth.user.AuthUser;
 import demo.playground.reactivespringauth.user.UserRepository;
-import demo.playground.reactivespringauth.security.jwt.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;

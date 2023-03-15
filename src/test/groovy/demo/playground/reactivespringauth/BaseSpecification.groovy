@@ -7,10 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.web.reactive.function.client.WebClient
 import spock.lang.Specification
 
 @ContextConfiguration()
-@WebFluxTest(AuthController.class)
 @AutoConfigureDataMongo
 @ComponentScan(["demo.playground.reactivespringauth"])
 class BaseSpecification extends Specification {

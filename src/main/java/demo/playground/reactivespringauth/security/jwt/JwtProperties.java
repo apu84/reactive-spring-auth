@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProperties {
 
-    private String secretkey = "asfwegerteryrtbdvbfgytyutrjhdfvfghrytutyrsfdsfdsdfsrethgrdscdfgdb";
+    private String secretkey = "test";
 
     // validity in milliseconds
     private long validityinms; // 1h
