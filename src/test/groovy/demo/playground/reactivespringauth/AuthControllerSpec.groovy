@@ -24,7 +24,5 @@ class AuthControllerSpec extends Specification {
         .uri("/auth/login")
         .exchange()
         .expectStatus().isEqualTo(405)
-        .expectStatus().isEqualTo(405)
-        .expectStatus().isEqualTo(405)
     }
 }
