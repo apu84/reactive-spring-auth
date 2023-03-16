@@ -141,13 +141,60 @@ class AuthControllerSpec extends BaseSpecification {
                 .expectStatus().isUnauthorized()
     }
 
-    def "Request without an access token return 401"() {
+    def "Request /me without an access token return 401"() {
         expect: "GET /me without access token results 401"
         webTestClient.get()
                 .uri("/auth/me")
                 .exchange()
                 .expectStatus().isUnauthorized()
     }
+
+    def "Request /logout without an access token return 401"() {
+        expect: "POST /logout without access token results 401"
+        webTestClient.get()
+                .uri("/auth/logout")
+                .exchange()
+                .expectStatus().isUnauthorized()
+    }
+
+    def "Request /logout invalidates access token"() {
+        given: "A new user with name test1 and password test1 is created"
+        webTestClient.post()
+                .uri("/auth/new-user")
+                .header("Content-Type", "application/json")
+                .body(Mono.just("{\"username\":\"test1\", \"password\":\"test1\", \"email\": \"test1@test.com\"}"), String.class)
+                .exchange()
+
+        and: "User login with username:test1@test.com and password: test1"
+        var responseBody = webTestClient.post()
+                .uri("/auth/login")
+                .header("Content-Type", "application/json")
+                .body(Mono.just("{\"username\":\"test1@test.com\", \"password\":\"test1\"}"), String.class)
+                .exchange()
+                .returnResult(Map.class)
+
+        Map<String, String> body = responseBody.responseBody.blockFirst();
+        var accessToken = body.get("access_token")
+
+        when: "/auth/logout request is done with the returned access token"
+        var logoutResponse = webTestClient.post()
+                .uri("/auth/logout")
+                .header("Authorization", "Bearer " + accessToken)
+                .exchange()
+
+        then:
+        logoutResponse.expectStatus().isOk()
+
+        and: "/auth/me request is done with the old access token return 401"
+        webTestClient.get()
+                .uri("/auth/me")
+                .header("Authorization", "Bearer " + accessToken)
+                .exchange()
+                .expectStatus().isUnauthorized()
+
+    }
+
+
 
     def cleanup() {
         userRepository.deleteAll().block()
