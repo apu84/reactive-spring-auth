@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -65,7 +66,7 @@ public class AuthController {
                 });
     }
 
-    @PostMapping("new-user")
+    @PostMapping("/new-user")
     public Mono<ResponseEntity<AuthUser>> create(@RequestBody Mono<AuthUser> userEntity) {
         return userEntity
                 .map(user -> AuthUser.builder()
@@ -87,7 +88,9 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public Mono<AuthUser> currentUser(@AuthenticationPrincipal Mono<UserDetails> principal) {
+    public Mono<AuthUser> currentUser(@AuthenticationPrincipal Mono<UserDetails> principal,
+                                      ServerHttpRequest request) {
+        System.out.println(request.getURI());
         return principal.flatMap(user -> userRepository.findByEmail(user.getUsername()));
     }
 

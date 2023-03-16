@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/health-check")
+@RequestMapping("/auth/health-check")
 public class HealthCheck {
     @GetMapping("/ping")
     public Mono<String> ping() {

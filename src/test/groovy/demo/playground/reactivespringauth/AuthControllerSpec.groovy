@@ -1,10 +1,8 @@
 package demo.playground.reactivespringauth
 
 import demo.playground.reactivespringauth.api.AuthController
-import demo.playground.reactivespringauth.security.jwt.JwtProperties
 import demo.playground.reactivespringauth.security.jwt.TokenRepository
 import demo.playground.reactivespringauth.user.UserRepository
-import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 import reactor.core.publisher.Mono

@@ -48,7 +48,7 @@ public class SecurityConfig {
 
         //Those that do not require jwt token authentication should be pass.
         http.authorizeExchange()
-                .pathMatchers("/health-check/**", "/auth/login", "/auth/new-user")
+                .pathMatchers("/auth/health-check/**", "/auth/login", "/auth/new-user")
                 .permitAll();
 
         http.authorizeExchange()
