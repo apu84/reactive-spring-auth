@@ -39,7 +39,7 @@ public class JwtTokenProvider {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         var secret = Base64.getEncoder()
-                .encodeToString(this.jwtProperties.getSecretkey().getBytes());
+                .encodeToString(getJwtProperties().getSecretkey().getBytes());
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -54,7 +54,7 @@ public class JwtTokenProvider {
         }
 
         Date now = new Date();
-        Date validity = new Date(now.getTime() + this.jwtProperties.getValidityinms());
+        Date validity = new Date(now.getTime() + getJwtProperties().getValidityinms());
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
@@ -85,5 +85,9 @@ public class JwtTokenProvider {
                     t.deActivate();
                     return tokenRepository.save(t);
                 });
+    }
+
+    public JwtProperties getJwtProperties() {
+        return jwtProperties;
     }
 }
