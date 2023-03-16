@@ -5,7 +5,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
 
 @WebFluxTest(HealthCheck.class)
 class HealthCheckControllerSpec extends BaseSpecification {
-    def PING_URL_PATH = "/health-check/ping"
+    def PING_URL_PATH = "/auth/health-check/ping"
 
     def "Simple test to make sure Spock is working: 1 + 1 = 2"() {
         when:
