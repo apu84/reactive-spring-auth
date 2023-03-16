@@ -4,6 +4,8 @@ package demo.playground.reactivespringauth.api;
 import demo.playground.reactivespringauth.security.jwt.JwtTokenProvider;
 import demo.playground.reactivespringauth.user.AuthUser;
 import demo.playground.reactivespringauth.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,7 @@ import java.util.function.Predicate;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
     private final JwtTokenProvider tokenProvider;
 
     private final ReactiveAuthenticationManager authenticationManager;
@@ -90,7 +93,7 @@ public class AuthController {
     @GetMapping("/me")
     public Mono<AuthUser> currentUser(@AuthenticationPrincipal Mono<UserDetails> principal,
                                       ServerHttpRequest request) {
-        System.out.println(request.getURI());
+        LOGGER.info("Request uri -> {}", request.getURI());
         return principal.flatMap(user -> userRepository.findByEmail(user.getUsername()));
     }
 
