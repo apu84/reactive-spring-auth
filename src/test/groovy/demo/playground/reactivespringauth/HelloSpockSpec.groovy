@@ -2,9 +2,8 @@ package demo.playground.reactivespringauth
 
 import spock.lang.Specification
 
-
 class HelloSpockSpec extends Specification {
-    def "length of Spock's and his friends' names"() {
+    def "length of #name and his friends' names"() {
         expect:
         name.size() == length
 

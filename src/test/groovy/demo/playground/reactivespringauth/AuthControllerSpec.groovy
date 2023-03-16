@@ -141,16 +141,12 @@ class AuthControllerSpec extends BaseSpecification {
                 .expectStatus().isUnauthorized()
     }
 
-    def "Request without an access token return 400"() {
+    def "Request without an access token return 401"() {
         expect: "GET /me without access token results 401"
         webTestClient.get()
                 .uri("/auth/me")
                 .exchange()
                 .expectStatus().isUnauthorized()
-    }
-
-    def "Request with an expired token will return 401"() {
-
     }
 
     def cleanup() {

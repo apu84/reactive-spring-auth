@@ -8,20 +8,21 @@ import demo.playground.reactivespringauth.user.UserRepository
 import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.test.context.TestPropertySource
 import reactor.core.publisher.Mono
 
-@WebFluxTest(AuthController.class)
-class AuthController2Spec extends BaseSpecification{
+@WebFluxTest(
+        controllers=AuthController.class,
+        properties=["jwt.secretkey=123456789012345678901234567890","jwt.validityinms=1"]
+)
+class AuthController2Spec extends BaseSpecification {
     @Autowired
     UserRepository userRepository
 
     @Autowired
     TokenRepository tokenRepository
 
-    @Autowired
-    JwtTokenProvider jwtTokenProvider;
-
-    def "/me endpoint will give valid json with username and roles"() {
+    def "Request with an expired token will return 401"() {
         given: "A new user with name test1 and password test1 is created"
         webTestClient.post()
                 .uri("/auth/new-user")
@@ -46,15 +47,8 @@ class AuthController2Spec extends BaseSpecification{
                 .header("Authorization", "Bearer " + accessToken)
                 .exchange()
 
-
         then:
-        meResponse.expectStatus().isOk()
-                .expectBody()
-                .jsonPath("\$.username").isEqualTo("test1")
-                .jsonPath("\$.email").isEqualTo("test1@test.com")
-                .jsonPath("\$.roles").isArray()
-                .jsonPath("\$.roles.size()").isEqualTo(1)
-                .jsonPath("\$.roles[0]").isEqualTo("USER")
+        meResponse.expectStatus().isUnauthorized()
     }
 
     def cleanup() {

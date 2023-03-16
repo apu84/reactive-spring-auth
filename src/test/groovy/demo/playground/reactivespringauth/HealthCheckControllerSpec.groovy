@@ -1,5 +1,9 @@
 package demo.playground.reactivespringauth
 
+import demo.playground.reactivespringauth.api.HealthCheck
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+
+@WebFluxTest(HealthCheck.class)
 class HealthCheckControllerSpec extends BaseSpecification {
     def PING_URL_PATH = "/health-check/ping"
 
