@@ -192,8 +192,6 @@ class AuthControllerSpec extends BaseSpecification {
 
     }
 
-
-
     def cleanup() {
         userRepository.deleteAll().block()
         tokenRepository.deleteAll().block()
