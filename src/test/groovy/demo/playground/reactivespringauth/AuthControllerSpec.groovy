@@ -5,9 +5,15 @@ import demo.playground.reactivespringauth.security.jwt.TokenRepository
 import demo.playground.reactivespringauth.user.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.spock.Testcontainers
+import org.testcontainers.utility.DockerImageName
 import reactor.core.publisher.Mono
 
 @WebFluxTest(AuthController.class)
+@Testcontainers
 class AuthControllerSpec extends BaseSpecification {
 
     @Autowired
@@ -16,8 +22,12 @@ class AuthControllerSpec extends BaseSpecification {
     @Autowired
     TokenRepository tokenRepository;
 
-    def setup() {
+    final static MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.0.10"))
 
+    @DynamicPropertySource
+    static void mongoProps(DynamicPropertyRegistry registry) {
+        mongoDBContainer.start()
+        registry.add("spring.data.mongodb.uri", () ->   mongoDBContainer.replicaSetUrl)
     }
 
     def "GET /auth/login should return 405"() {

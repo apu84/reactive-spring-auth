@@ -5,18 +5,32 @@ import demo.playground.reactivespringauth.security.jwt.TokenRepository
 import demo.playground.reactivespringauth.user.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.spock.Testcontainers
+import org.testcontainers.utility.DockerImageName
 import reactor.core.publisher.Mono
 
 @WebFluxTest(
         controllers=AuthController.class,
         properties=["jwt.secretkey=123456789012345678901234567890","jwt.validityinms=1"]
 )
+@Testcontainers
 class AuthController2Spec extends BaseSpecification {
     @Autowired
     UserRepository userRepository
 
     @Autowired
     TokenRepository tokenRepository
+
+    final static MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.0.10"))
+
+    @DynamicPropertySource
+    static void mongoProps(DynamicPropertyRegistry registry) {
+        mongoDBContainer.start()
+        registry.add("spring.data.mongodb.uri", () ->   mongoDBContainer.replicaSetUrl)
+    }
 
     def "Request with an expired token will return 401"() {
         given: "A new user with name test1 and password test1 is created"
